@@ -22,13 +22,12 @@ architecture behavioral of top is
   -- signaler
   signal vga_data : std_logic_vector(7 downto 0) := x"00";
   signal buttons : std_logic_vector(4 downto 0);
+  
   -- komponenter
-
   component cpu
     port (
       clk : in std_logic;
-      vga_data : out std_logic_vector(7 downto 0);
-      buttons : in std_logic_vector(4 downto 0);
+      vga_data : out std_logic_vector(7 downto 0);  -- datan som ska skickas till VGA-motorn
       btnu, btnd, btnl, btnr, btns : in std_logic;
       color : in std_logic_vector(7 downto 0)
       );
@@ -47,12 +46,6 @@ architecture behavioral of top is
   end component;
   
 begin
-  buttons(0) <= btnu;
-  buttons(1) <= btnl;
-  buttons(2) <= btnd;
-  buttons(3) <= btnr;
-  buttons(4) <= btns;
-
   
   --port map cpu
   cpuComp : cpu port map (
@@ -67,7 +60,6 @@ begin
     btns => btns
 );
   
-
   --port map vga_motor
   vga_motorComp : vga_motor port map (
     clk => clk,
@@ -79,7 +71,5 @@ begin
     hsync => hsync,
     vsync => vsync
 );
-
-  
 
 end behavioral;
