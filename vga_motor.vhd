@@ -14,13 +14,13 @@ use IEEE.NUMERIC_STD.ALL;               -- IEEE library for the unsigned type
 -- entity
 entity VGA_MOTOR is
   port ( clk			: in std_logic;
-         switches               : in std_logic_vector(7 downto 0);
-	 data			: in std_logic_vector(7 downto 0);
-	 vgaRed		        : out std_logic_vector(2 downto 0);
-	 vgaGreen	        : out std_logic_vector(2 downto 0);
-	 vgaBlue		: out std_logic_vector(2 downto 1);
-	 Hsync		        : out std_logic;
-	 Vsync		        : out std_logic);
+         switches               : in std_logic_vector(7 downto 0);	-- switcharnas vÃ¤rde
+	 data			: in std_logic_vector(7 downto 0);	-- Data frÃ¥n cpun
+	 vgaRed		        : out std_logic_vector(2 downto 0);	-- rÃ¶d
+	 vgaGreen	        : out std_logic_vector(2 downto 0);	-- grÃ¶n
+	 vgaBlue		: out std_logic_vector(2 downto 1);	-- blÃ¥
+	 Hsync		        : out std_logic;			-- horisontell sync signal
+	 Vsync		        : out std_logic);			-- vertikal sync signal
 end VGA_MOTOR;
 
 
@@ -42,13 +42,13 @@ architecture Behavioral of VGA_MOTOR is
   signal data_buf : std_logic_vector(7 downto 0) := x"00";  -- for storing previous data value
   signal command : std_logic_vector(1 downto 0) := "00";
   -- command 0: NOP
-  -- command 1: sätt x
-  -- command 2: sätt y
-  -- command 3: sätt we
+  -- command 1: sÃ¤tt x
+  -- command 2: sÃ¤tt y
+  -- command 3: sÃ¤tt we
 
 
-  --upplösning 80/60 ger 19200 bytes av bilddata vilket är lagom?
-  -- då blir varje pixel 4ggr så stor
+  --upplÃ¶sning 80/60 ger 19200 bytes av bilddata vilket Ã¤r lagom?
+  -- dÃ¥ blir varje pixel 4ggr sÃ¥ stor
   --|00...................79,0|
   --|0,1..................79,1|
   --           ...
@@ -58,26 +58,26 @@ architecture Behavioral of VGA_MOTOR is
   type minne is array (0 to (2048*3 - 1)) of std_logic_vector(7 downto 0);
 
 -- pic memory
-  signal picMem : minne := (others => x"FF");
-  signal xcoord : unsigned(9 downto 0) := "0000101000";
+  signal picMem : minne := (others => x"FF");	-- vit som default fÃ¤rg
+  signal xcoord : unsigned(9 downto 0) := "0000101000"; -- curson bÃ¶rjar mitt pÃ¥ skÃ¤rmen x = 40 y = 30
   signal ycoord : unsigned(9 downto 0) := "0000011110";
   
 begin
 
-  --Hanterar kommadon från cpu eller whatever
-  --kollar om data-signal har ändrats, isf
-  --om commando = 00 (standardläget) uppdaterar vi commando enl data
-  -- nästa gång data ändras gör vi det tidigare valda commandot mha nya datasignalen
+  --Hanterar kommadon frÃ¥n cpu eller whatever
+  --kollar om data-signal har Ã¤ndrats, isf
+  --om commando = 00 (standardlÃ¤get) uppdaterar vi commando enl data
+  -- nÃ¤sta gÃ¥ng data Ã¤ndras gÃ¶r vi det tidigare valda commandot mha nya datasignalen
   process(clk)
   begin
     if rising_edge(clk) then
-      if data /= data_buf then
-        if command = "00" or data(7) = '1' then
+      if data /= data_buf then	-- kollar att vi har fÃ¥tt ny data 
+        if command = "00" or data(7) = '1' then -- kollar om vi har fÃ¥tt signal eller Ã¤r pÃ¥ NOP
           case data is
             when x"80" => command <= "00";  --NOP
             when x"81" => command <= "01";  --x
             when x"82" => command <= "10";  --y
-            when x"83" => command <= "11";  --we
+            when x"83" => command <= "11";  --we, write enable 
             when others => null;
           end case;
           data_buf <= data;
