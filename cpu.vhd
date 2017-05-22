@@ -6,9 +6,8 @@ entity cpu is
   port(
     -- in och utsignaler
     clk : in std_logic;
-    vga_data : out std_logic_vector(7 downto 0);
-    buttons : in std_logic_vector(4 downto 0);
-    btnu, btnd, btnl, btnr, btns : in std_logic;
+    vga_data : out std_logic_vector(7 downto 0);  -- data till VGA-motorn
+    btnu, btnd, btnl, btnr, btns : in std_logic;  -- alla knappar 
     color : in std_logic_vector(7 downto 0)
   );
 end cpu;
@@ -36,9 +35,10 @@ architecture behavioral of cpu is
   signal ar : std_logic_vector(15 downto 0) := x"0000";  -- Accumulatorregister
   signal helpr : std_logic_vector(15 downto 0) := x"0000";  -- help register
 
-
   signal umsig_cpu : std_logic_vector(31 downto 0);
   signal tobuss : std_logic_vector(2 downto 0);
+
+  -- instruktioner 
   --load        0000
   --store       0001
   --add         0010
@@ -47,8 +47,10 @@ architecture behavioral of cpu is
   --bra         0101
   --bne         0110
   --beq         0111
-  --btn         1000
-  --vga         1001
+  --btn         1000 ; laddar in knappar i grx
+  --vga         1001 ; skickar ut grx-data till vga-motorn
+
+-- programmet 
   signal pm : prog_mem := ("0000000100000000",  --00 load, gr0, d40   INIT
                            "0000000000101000",  --01 d40
                            "0000010100000000",  --02 load gr1, d30
@@ -179,9 +181,8 @@ architecture behavioral of cpu is
                            
                            others => "0000000000000000");
   
-  signal curr_pm : std_logic_vector(15 downto 0) := x"0000";
+  signal curr_pm : std_logic_vector(15 downto 0) := x"0000";  -- nuvarande instruktion som exekveras 
 
-  signal testsignal : unsigned(7 downto 0) := x"00";
   signal Xsignal : unsigned(7 downto 0) := "00101000";
 
   signal check_c : std_logic_vector(16 downto 0);
@@ -194,6 +195,7 @@ architecture behavioral of cpu is
   --VGA
   --signal vga_data : std_logic_vector(7 downto 0);
 
+-- komponenten umem ligger i cpun
   component umem
     port (
       clk : in std_logic;               -- clock
@@ -213,14 +215,13 @@ begin
     sr => sr
   );
   
-  --umsig <= umem(to_integer(unsigned(upc)));
-  tobuss <= umsig_cpu(27 downto 25);
-  curr_pm <= pm(to_integer(unsigned(asr)));
+  tobuss <= umsig_cpu(27 downto 25); -- till buss-fältet
+  curr_pm <= pm(to_integer(unsigned(asr))); -- signal för den nuvarande instruktionen som behandlas 
 
   process(clk)
   begin
     if rising_edge(clk) then
-      sel <= ir(11 downto 10);
+      sel <= ir(11 downto 10);  -- sel styr gmx -muxen
     end if;
   end process;
   
@@ -234,14 +235,12 @@ begin
     helpr when "101",
     gmux(to_integer(unsigned(sel))) when "110",
     x"0000" when others;
-
-
   
   -- IR
   process(clk)
   begin
     if rising_edge(clk) then
-      if umsig_cpu(24 downto 22) = "001" then
+      if umsig_cpu(24 downto 22) = "001" then -- umsig(24 downto 22) = från buss
         ir <= buss;
       end if;
     end if;             
@@ -251,7 +250,7 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if umsig_cpu(24 downto 22) = "010" then
+      if umsig_cpu(24 downto 22) = "010" then -- umsig(24 downto 22) = från buss
         pm(to_integer(unsigned(asr))) <= buss;
       end if;
     end if;             
@@ -261,8 +260,8 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if umsig_cpu(24 downto 22) = "011" then
-        pc <= buss(7 downto 0);
+      if umsig_cpu(24 downto 22) = "011" then -- umsig(24 downto 22) = från buss
+        pc <= buss(7 downto 0);   -- får endast plats med den sista byten
       elsif umsig_cpu(21) = '1' then  --P bit
         pc <= std_logic_vector(unsigned(pc) + 1);
       end if;
@@ -278,9 +277,7 @@ begin
       end if;
     end if;                     
   end process;
-  
-
-  
+ 
   -- GRX
   process(clk)
   begin
@@ -308,7 +305,7 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if umsig_cpu(24 downto 22) = "111" then
+      if umsig_cpu(24 downto 22) = "111" then   -- umsig(24 downto 22) = från buss
         asr <= buss(7 downto 0);
       end if;
     end if;             
